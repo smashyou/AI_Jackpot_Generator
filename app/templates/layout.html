@@ -1,20 +1,134 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>{{ title|default("AI Lottery") }}</title>
+    <title>
+      {{ title|default("AI-Powered Jackpot Number Prediction App") }}
+    </title>
+    <meta
+      name="description"
+      content="AI-powered lottery frequency stats, predictions, and generate winning combinations for Powerball and Mega Millions."
+    />
+    <meta
+      name="keywords"
+      content="Lottery, Powerball, Mega Millions, AI predictions, combinations, combos, winning numbers, frequency, jackpot number generator"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- AdSense Code (Replace with your real IDs) -->
+    <script
+      async
+      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+    ></script>
+    <script>
+      (adsbygoogle = window.adsbygoogle || []).push({
+        google_ad_client: "ca-pub-xxxxxxxxxxxxxxx",
+        enable_page_level_ads: true,
+      });
+    </script>
+
+    <!-- Bootstrap 5 CSS -->
     <link
       rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
     />
+
+    <style>
+      /* Default (light) mode */
+      :root {
+        --bs-body-bg: #ffffff;
+        --bs-body-color: #212529;
+        --input-bg: #ffffff;
+        --input-color: #212529;
+        --input-border: #ced4da;
+      }
+      /* Dark mode overrides */
+      .dark-mode {
+        --bs-body-bg: #121212;
+        --bs-body-color: #f8f9fa;
+        --input-bg: #333333;
+        --input-color: #f8f9fa;
+        --input-border: #555555;
+      }
+      body {
+        background-color: var(--bs-body-bg);
+        color: var(--bs-body-color);
+      }
+      .form-control {
+        background-color: var(--input-bg);
+        color: var(--input-color);
+        border-color: var(--input-border);
+      }
+      /* For WebKit browsers: invert the calendar picker icon */
+      input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(0);
+      }
+      .dark-mode input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+      }
+    </style>
   </head>
   <body>
-    <nav class="navbar navbar-dark bg-dark mb-4">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
       <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1">AI Lottery</span>
+        <a class="navbar-brand" href="{{ url_for('index') }}"
+          >AI-Powered Jackpot Number Prediction App</a
+        >
+        <button class="btn btn-outline-light" id="themeToggle">
+          Toggle Dark Mode
+        </button>
       </div>
     </nav>
-    <div class="container mb-3">{% block content %}{% endblock %}</div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Top AdSense Placeholder -->
+    <div class="container mb-3">
+      <ins
+        class="adsbygoogle"
+        style="display: block"
+        data-ad-client="ca-pub-xxxxxxxxxxxxxxx"
+        data-ad-slot="1234567890"
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+      ></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </div>
+
+    <div class="container mb-4">{% block content %}{% endblock %}</div>
+
+    <!-- Bottom AdSense Placeholder -->
+    <div class="container mt-4">
+      <ins
+        class="adsbygoogle"
+        style="display: block"
+        data-ad-client="ca-pub-xxxxxxxxxxxxxxx"
+        data-ad-slot="0987654321"
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+      ></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      // Check localStorage for dark mode setting on load
+      document.addEventListener("DOMContentLoaded", function () {
+        if (localStorage.getItem("darkMode") === "true") {
+          document.body.classList.add("dark-mode");
+        }
+      });
+      // Toggle dark mode and persist to localStorage
+      const toggleBtn = document.getElementById("themeToggle");
+      toggleBtn.addEventListener("click", function () {
+        document.body.classList.toggle("dark-mode");
+        const isDark = document.body.classList.contains("dark-mode");
+        localStorage.setItem("darkMode", isDark);
+      });
+    </script>
   </body>
 </html>

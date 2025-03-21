@@ -1,14 +1,95 @@
 {% extends "layout.html" %} {% block content %}
-<h2>Manual Combos</h2>
+<h2>Manual Combos for {{ game }}</h2>
+<p>Date Range: {{ start_date }} to {{ end_date }}</p>
+
+<!-- Maybe show frequency again for user reference -->
+<div class="row mb-4">
+  <div class="col-md-6">
+    <h4>White Ball Frequency</h4>
+    <div id="whiteChart"></div>
+  </div>
+  <div class="col-md-6">
+    <h4>
+      {% if game == "Powerball" %} Powerball Frequency {% else %} Mega Ball
+      Frequency {% endif %}
+    </h4>
+    <div id="redChart"></div>
+  </div>
+</div>
+
+<form method="POST" action="{{ url_for('manual_combos') }}" class="row g-3">
+  <div class="col-md-12">
+    <label for="whiteCandidates" class="form-label"
+      >White Ball Candidates (comma-separated):</label
+    >
+    <input
+      type="text"
+      class="form-control"
+      id="whiteCandidates"
+      name="white_list"
+    />
+  </div>
+  <div class="col-md-12">
+    <label for="redCandidates" class="form-label">
+      {% if game == "Powerball" %} Powerball Candidates {% else %} Mega Ball
+      Candidates {% endif %} (comma-separated):
+    </label>
+    <input
+      type="text"
+      class="form-control"
+      id="redCandidates"
+      name="red_list"
+    />
+  </div>
+  <!-- hidden fields for game, start_date, end_date if needed -->
+  <input type="hidden" name="game" value="{{ game }}" />
+  <input type="hidden" name="start_date" value="{{ start_date }}" />
+  <input type="hidden" name="end_date" value="{{ end_date }}" />
+
+  <div class="col-md-12">
+    <button class="btn btn-info">Generate Combos</button>
+  </div>
+</form>
+
 {% if combos %}
-<p>Total combos: {{ combos|length }}</p>
-<ol>
-  {% for c in combos %}
-  <li>White: {{ c[0] }} | Red: {{ c[1] }}</li>
-  {% endfor %}
-</ol>
-<a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Home</a>
-{% else %}
-<p>No combos to display yet. Use the form on the home page.</p>
-<a href="{{ url_for('index') }}" class="btn btn-primary">Back to Home</a>
-{% endif %} {% endblock %}
+<div class="card p-3 mt-4">
+  <h5>Generated Combos</h5>
+  <ul>
+    {% for c in combos %}
+    <li>
+      White: {{ c[0] }} | {% if game == "Powerball" %}Powerball{% else
+      %}MegaBall{% endif %}: {{ c[1] }}
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<button
+  class="btn btn-secondary mt-3"
+  onclick="location.href='{{ url_for('index') }}'"
+>
+  Go Home
+</button>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+  var xw = {{ xw|tojson|safe }};
+  var yw = {{ yw|tojson|safe }};
+  var game = "{{ game }}"
+  if (game === "Powerball" ) {
+    Plotly.newPlot('whiteChart', [{ x: xw, y: yw, type: 'bar'}], { title: '1-69'});
+  } else {
+    Plotly.newPlot('whiteChart', [{ x: xw, y: yw, type: 'bar'}], { title: '1-70'});
+  }
+
+
+  var xr = {{ xr|tojson|safe }};
+  var yr = {{ yr|tojson|safe }};
+  if (game === "Powerball") {
+    Plotly.newPlot('redChart', [{ x: xr, y: yr, type: 'bar', marker: { color: 'red' }}], { title: '1-26'});
+  } else {
+    Plotly.newPlot('redChart', [{ x: xr, y: yr, type: 'bar', marker: { color: 'red' }}], { title: '1-25'});
+  }
+</script>
+{% endblock %}

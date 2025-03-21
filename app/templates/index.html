@@ -1,66 +1,129 @@
 {% extends "layout.html" %} {% block content %}
-<h1>Lottery AI App</h1>
-<p>
-  Select a game &amp; date range to see frequency stats, or do AI predictions,
-  or generate manual combos.
-</p>
+<div class="mb-4">
+  <h2>AI-Powered Jackpot Number Prediction App</h2>
+  <p>Select a game &amp; date range, then pick which action you want.</p>
+</div>
 
-<form method="POST" action="{{ url_for('frequency') }}" class="mb-3">
-  <div class="mb-2">
-    <label>Game:</label>
-    <select name="game" class="form-select">
+<!-- Single form for game + date range selection -->
+<!-- We'll update hidden fields in each action form below. -->
+<form class="row g-3" method="GET" action="#">
+  <div class="col-md-4">
+    <label for="gameSelect" class="form-label">Game:</label>
+    <select class="form-select" id="gameSelect" name="game">
       <option value="Powerball">Powerball</option>
       <option value="Megamillions">Mega Millions</option>
     </select>
   </div>
-  <div class="mb-2">
-    <label>Start Date:</label>
-    <input type="date" name="start_date" class="form-control" required />
+  <div class="col-md-4">
+    <label for="startDate" class="form-label">Start Date:</label>
+    <input type="date" class="form-control" id="startDate" name="start_date" />
+    <br class="text-muted">
+      Powerball earliest: 2015-10-07 <br>Mega Millions earliest: 2017-10-31
+    </small>
   </div>
-  <div class="mb-2">
-    <label>End Date:</label>
-    <input type="date" name="end_date" class="form-control" required />
+  <div class="col-md-4">
+    <label for="endDate" class="form-label">End Date:</label>
+    <input type="date" class="form-control" id="endDate" name="end_date" />
   </div>
-  <button class="btn btn-primary">Show Frequency</button>
 </form>
 
-<form method="POST" action="{{ url_for('ai_predict') }}" class="mb-3">
-  <div class="mb-2">
-    <label>Game:</label>
-    <select name="game" class="form-select">
-      <option value="Powerball">Powerball</option>
-      <option value="Megamillions">Mega Millions</option>
-    </select>
-  </div>
-  <button class="btn btn-success">AI Prediction</button>
-</form>
+<hr />
 
-<form method="POST" action="{{ url_for('manual_combos') }}">
-  <div class="mb-2">
-    <label>Game:</label>
-    <select name="game" class="form-select">
-      <option value="Powerball">Powerball</option>
-      <option value="Megamillions">Mega Millions</option>
-    </select>
+<!-- We have 3 separate forms to go to their respective endpoints -->
+<div class="mb-3">
+  <h5>Choose an action:</h5>
+  <div class="d-flex gap-3 flex-wrap">
+    <!-- 1) Show Frequency -->
+    <form method="POST" action="{{ url_for('show_frequency') }}">
+      <input type="hidden" name="game" id="freqGame" />
+      <input type="hidden" name="start_date" id="freqStart" />
+      <input type="hidden" name="end_date" id="freqEnd" />
+      <button class="btn btn-primary">Show Frequency</button>
+    </form>
+
+    <!-- 2) AI Prediction -->
+    <form method="POST" action="{{ url_for('ai_predict') }}">
+      <input type="hidden" name="game" id="aiGame" />
+      <input type="hidden" name="start_date" id="aiStart" />
+      <input type="hidden" name="end_date" id="aiEnd" />
+      <button class="btn btn-success">AI Prediction</button>
+    </form>
+
+    <!-- 3) Generate Combos -->
+    <form method="POST" action="{{ url_for('manual_combos') }}">
+      <input type="hidden" name="game" id="comboGame" />
+      <input type="hidden" name="start_date" id="comboStart" />
+      <input type="hidden" name="end_date" id="comboEnd" />
+      <button class="btn btn-info">Generate Combos</button>
+    </form>
   </div>
-  <div class="mb-2">
-    <label>White Ball Candidates (comma-separated):</label>
-    <input
-      type="text"
-      name="white_list"
-      class="form-control"
-      placeholder="1,2,3,4,5,6"
-    />
-  </div>
-  <div class="mb-2">
-    <label>Red Ball Candidates (comma-separated):</label>
-    <input
-      type="text"
-      name="red_list"
-      class="form-control"
-      placeholder="10,11"
-    />
-  </div>
-  <button class="btn btn-info">Generate Combos</button>
-</form>
+</div>
+
+<script>
+  const gameSelect = document.getElementById("gameSelect");
+  const startDate = document.getElementById("startDate");
+  const endDate = document.getElementById("endDate");
+
+  // hidden form fields for each action
+  const freqGame = document.getElementById("freqGame");
+  const freqStart = document.getElementById("freqStart");
+  const freqEnd = document.getElementById("freqEnd");
+
+  const aiGame = document.getElementById("aiGame");
+  const aiStart = document.getElementById("aiStart");
+  const aiEnd = document.getElementById("aiEnd");
+
+  const comboGame = document.getElementById("comboGame");
+  const comboStart = document.getElementById("comboStart");
+  const comboEnd = document.getElementById("comboEnd");
+
+  function setMinDate() {
+    // If user picks "Powerball", min date is 2015-10-07
+    // If "Megamillions", min date is 2017-10-31
+    if (gameSelect.value === "Powerball") {
+      startDate.min = "2015-10-07";
+    } else {
+      startDate.min = "2017-10-31";
+    }
+    // If user has set something earlier, we might reset it:
+    if (startDate.value) {
+      const chosen = new Date(startDate.value);
+      const minStr = startDate.min;
+      const minDate = new Date(minStr);
+      if (chosen < minDate) {
+        startDate.value = minStr;
+      }
+    }
+  }
+
+  function syncInputs() {
+    freqGame.value = gameSelect.value;
+    freqStart.value = startDate.value;
+    freqEnd.value = endDate.value;
+
+    aiGame.value = gameSelect.value;
+    aiStart.value = startDate.value;
+    aiEnd.value = endDate.value;
+
+    comboGame.value = gameSelect.value;
+    comboStart.value = startDate.value;
+    comboEnd.value = endDate.value;
+  }
+
+  // On page load, set the correct min date based on the default game
+  window.addEventListener("DOMContentLoaded", () => {
+    setMinDate();
+    syncInputs();
+  });
+
+  // Whenever user changes the game, we set the min date
+  gameSelect.addEventListener("change", () => {
+    setMinDate();
+    syncInputs();
+  });
+
+  // If user changes the dates, we also sync them to hidden fields
+  startDate.addEventListener("change", syncInputs);
+  endDate.addEventListener("change", syncInputs);
+</script>
 {% endblock %}

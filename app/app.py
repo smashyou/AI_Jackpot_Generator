@@ -8,29 +8,24 @@ import torch.nn.functional as F
 
 from db.models import init_db, SessionLocal, PowerballDraw, MegamillionsDraw
 
-############################
-# Load saved models if they exist
-############################
-
-POWERBALL_MODEL_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "training", "powerball_model.pt")
-MEGAMILLIONS_MODEL_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "training", "megamillions_model.pt")
+###############################################
+# Load PyTorch Models for Predictions
+###############################################
+POWERBALL_MODEL_PATH = os.path.join("training", "powerball_model.pt")
+MEGAMILLIONS_MODEL_PATH = os.path.join("training", "megamillions_model.pt")
 
 app = Flask(__name__)
 
 model_powerball = None
 model_megamillions = None
 
-# We define MLP classes inline to match loaded weights:
-
+# Define example MLP classes (should match your training)
 class PowerballMLP(torch.nn.Module):
     def __init__(self, input_dim=95, hidden_dim=128, output_dim=95):
         super().__init__()
         self.fc1 = torch.nn.Linear(input_dim, hidden_dim)
         self.fc2 = torch.nn.Linear(hidden_dim, hidden_dim)
         self.fc_out = torch.nn.Linear(hidden_dim, output_dim)
-
     def forward(self, x):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
@@ -42,13 +37,11 @@ class MegamillionsMLP(torch.nn.Module):
         self.fc1 = torch.nn.Linear(input_dim, hidden_dim)
         self.fc2 = torch.nn.Linear(hidden_dim, hidden_dim)
         self.fc_out = torch.nn.Linear(hidden_dim, output_dim)
-
     def forward(self, x):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         return self.fc_out(x)
 
-# Attempt to load them
 if os.path.exists(POWERBALL_MODEL_PATH):
     model_powerball = PowerballMLP()
     model_powerball.load_state_dict(torch.load(POWERBALL_MODEL_PATH, map_location="cpu"))
@@ -59,235 +52,283 @@ if os.path.exists(MEGAMILLIONS_MODEL_PATH):
     model_megamillions.load_state_dict(torch.load(MEGAMILLIONS_MODEL_PATH, map_location="cpu"))
     model_megamillions.eval()
 
-############################
-# Frequency calculations
-############################
-
-def fetch_powerball_in_range(start_dt, end_dt):
+###############################################
+# Utility Functions: Frequency Calculation
+###############################################
+def fetch_powerball_draws(start_dt, end_dt):
     session = SessionLocal()
-    draws = (session.query(PowerballDraw)
-             .filter(PowerballDraw.draw_date >= start_dt,
-                     PowerballDraw.draw_date <= end_dt)
-             .order_by(PowerballDraw.draw_date)
-             .all())
+    q = session.query(PowerballDraw)
+    if start_dt is not None:
+        q = q.filter(PowerballDraw.draw_date >= start_dt)
+    if end_dt is not None:
+        q = q.filter(PowerballDraw.draw_date <= end_dt)
+    draws = q.order_by(PowerballDraw.draw_date).all()
     session.close()
     return draws
 
-def fetch_megamillions_in_range(start_dt, end_dt):
+def fetch_megamillions_draws(start_dt, end_dt):
     session = SessionLocal()
-    draws = (session.query(MegamillionsDraw)
-             .filter(MegamillionsDraw.draw_date >= start_dt,
-                     MegamillionsDraw.draw_date <= end_dt)
-             .order_by(MegamillionsDraw.draw_date)
-             .all())
+    q = session.query(MegamillionsDraw)
+    if start_dt is not None:
+        q = q.filter(MegamillionsDraw.draw_date >= start_dt)
+    if end_dt is not None:
+        q = q.filter(MegamillionsDraw.draw_date <= end_dt)
+    draws = q.order_by(MegamillionsDraw.draw_date).all()
     session.close()
     return draws
 
 def frequency_powerball(draws):
-    white_freq = {i:0 for i in range(1,70)}
-    red_freq = {i:0 for i in range(1,27)}
+    white_freq = {i: 0 for i in range(1, 70)}
+    red_freq   = {i: 0 for i in range(1, 27)}
     for d in draws:
-        whites = [int(x) for x in d.white_balls.split()]
+        ws = [int(x) for x in d.white_balls.split()]
         pb = int(d.powerball)
-        for w in whites:
+        for w in ws:
             white_freq[w] += 1
         red_freq[pb] += 1
     return white_freq, red_freq
 
 def frequency_megamillions(draws):
-    white_freq = {i:0 for i in range(1,71)}
-    red_freq = {i:0 for i in range(1,26)}
+    white_freq = {i: 0 for i in range(1, 71)}
+    red_freq   = {i: 0 for i in range(1, 26)}
     for d in draws:
-        whites = [int(x) for x in d.white_balls.split()]
+        ws = [int(x) for x in d.white_balls.split()]
         mb = int(d.megaball)
-        for w in whites:
+        for w in ws:
             white_freq[w] += 1
         red_freq[mb] += 1
     return white_freq, red_freq
 
-############################
-# Minimal feature vector for AI predictions
-############################
+def make_xy(freq_dict):
+    items = sorted(freq_dict.items(), key=lambda x: x[0])
+    x = [str(k) for k, _ in items]
+    y = [v for _, v in items]
+    return x, y
 
+###############################################
+# Utility Functions: Feature Vectors for AI Prediction
+###############################################
 def feature_vector_powerball(draws):
-    white = np.zeros(69, dtype=np.float32)
-    red = np.zeros(26, dtype=np.float32)
+    """Compute normalized frequency vector from given draws for Powerball."""
+    white_counts = np.zeros(69, dtype=np.float32)
+    red_counts = np.zeros(26, dtype=np.float32)
     for d in draws:
         ws = [int(x) for x in d.white_balls.split()]
         pb = int(d.powerball)
         for w in ws:
-            white[w-1] += 1
-        red[pb-1] += 1
+            white_counts[w - 1] += 1
+        red_counts[pb - 1] += 1
     total = len(draws)
-    if total>0:
-        white/= total
-        red/= total
-    return np.concatenate([white, red])  # shape (95,)
+    if total:
+        white_counts /= total
+        red_counts /= total
+    return np.concatenate([white_counts, red_counts])  # shape (95,)
 
 def feature_vector_megamillions(draws):
-    white = np.zeros(70, dtype=np.float32)
-    red = np.zeros(25, dtype=np.float32)
+    white_counts = np.zeros(70, dtype=np.float32)
+    red_counts = np.zeros(25, dtype=np.float32)
     for d in draws:
         ws = [int(x) for x in d.white_balls.split()]
         mb = int(d.megaball)
         for w in ws:
-            white[w-1]+=1
-        red[mb-1]+=1
+            white_counts[w - 1] += 1
+        red_counts[mb - 1] += 1
     total = len(draws)
-    if total>0:
-        white/= total
-        red/= total
-    return np.concatenate([white, red])  # shape (95,)
+    if total:
+        white_counts /= total
+        red_counts /= total
+    return np.concatenate([white_counts, red_counts])  # shape (95,)
 
-############################
-# Flask Routes
-############################
+###############################################
+# Routes
+###############################################
 
 @app.route("/")
 def index():
+    # Render the home page
     return render_template("index.html")
 
 @app.route("/frequency", methods=["POST"])
-def frequency():
+def show_frequency():
     game = request.form.get("game")
-    start_str = request.form.get("start_date")
-    end_str = request.form.get("end_date")
-
+    start_str = request.form.get("start_date", "")
+    end_str = request.form.get("end_date", "")
     try:
         start_dt = datetime.strptime(start_str, "%Y-%m-%d").date()
-        end_dt = datetime.strptime(end_str, "%Y-%m-%d").date()
-    except:
-        return "Invalid date format. Use YYYY-MM-DD."
-
-    if game=="Powerball":
-        draws = fetch_powerball_in_range(start_dt, end_dt)
-        white_freq, red_freq = frequency_powerball(draws)
+        end_dt   = datetime.strptime(end_str, "%Y-%m-%d").date()
+    except Exception as e:
+        return "Invalid date format. Please use YYYY-MM-DD."
+    
+    if game == "Powerball":
+        draws = fetch_powerball_draws(start_dt, end_dt)
+        wfreq, rfreq = frequency_powerball(draws)
     else:
-        draws = fetch_megamillions_in_range(start_dt, end_dt)
-        white_freq, red_freq = frequency_megamillions(draws)
-
-    # Turn freq dict into sorted lists
-    def to_xy(freq):
-        items = sorted(freq.items(), key=lambda x: x[0])
-        x = [str(k) for k,_ in items]
-        y = [v for _,v in items]
-        return x, y
-
-    xw, yw = to_xy(white_freq)
-    xr, yr = to_xy(red_freq)
-
+        draws = fetch_megamillions_draws(start_dt, end_dt)
+        wfreq, rfreq = frequency_megamillions(draws)
+    
+    xw, yw = make_xy(wfreq)
+    xr, yr = make_xy(rfreq)
+    
+    # Convert dates to strings for display in the template.
     return render_template("frequency.html",
                            game=game,
-                           start_date=start_dt,
-                           end_date=end_dt,
-                           xw=xw,
-                           yw=yw,
-                           xr=xr,
-                           yr=yr)
+                           start_date=start_dt.strftime("%Y-%m-%d"),
+                           end_date=end_dt.strftime("%Y-%m-%d"),
+                           xw=xw, yw=yw,
+                           xr=xr, yr=yr)
 
-@app.route("/ai_predict", methods=["POST"])
+@app.route("/ai_predict", methods=["GET", "POST"])
 def ai_predict():
-    game = request.form.get("game")
-    session = SessionLocal()
+    if request.method == "POST":
+        game = request.form.get("game")
+        start_str = request.form.get("start_date", "")
+        end_str   = request.form.get("end_date", "")
+        num_sets  = request.form.get("num_sets", 0, type=int)
+        try:
+            start_dt = datetime.strptime(start_str, "%Y-%m-%d").date()
+            end_dt   = datetime.strptime(end_str, "%Y-%m-%d").date()
+        except Exception as e:
+            return "Invalid date format. Please use YYYY-MM-DD."
 
-    if game=="Powerball":
-        # get last 20
-        draws = (session.query(PowerballDraw)
-                 .order_by(PowerballDraw.draw_date.desc())
-                 .limit(20)
-                 .all())
-        draws = list(reversed(draws))
-        feats = feature_vector_powerball(draws)
-        session.close()
-        if model_powerball is None:
-            return "No Powerball model loaded."
+        # Convert dates to strings for display.
+        start_date_str = start_dt.strftime("%Y-%m-%d")
+        end_date_str   = end_dt.strftime("%Y-%m-%d")
 
-        with torch.no_grad():
-            x_t = torch.from_numpy(feats).unsqueeze(0)
-            logits = model_powerball(x_t)
-            probs = torch.sigmoid(logits).numpy().flatten()
-
-        white_probs=probs[:69]
-        red_probs=probs[69:]
-        # pick top 5 white
-        top5 = np.argpartition(white_probs, -5)[-5:]
-        top5 = top5[np.argsort(white_probs[top5])[::-1]]
-        best_whites = list(top5+1)
-        best_red = int(np.argmax(red_probs)+1)
-
+        session = SessionLocal()
+        if game == "Powerball":
+            draws = fetch_powerball_draws(start_dt, end_dt)
+            if not draws or len(draws) < 5:
+                # Fallback: use the last 20 draws
+                draws = session.query(PowerballDraw).order_by(PowerballDraw.draw_date.desc()).limit(20).all()
+                draws = list(reversed(draws))
+            else:
+                draws = sorted(draws, key=lambda d: d.draw_date)
+            feats = feature_vector_powerball(draws)
+            session.close()
+            if model_powerball is None:
+                return "No Powerball model loaded."
+            with torch.no_grad():
+                x_t = torch.from_numpy(feats).unsqueeze(0)
+                logits = model_powerball(x_t)
+                probs = torch.sigmoid(logits).numpy().flatten()
+            # For Powerball: first 69 for white, next 26 for red.
+            white_probs = probs[:69]
+            red_probs = probs[69:]
+        else:
+            draws = fetch_megamillions_draws(start_dt, end_dt)
+            if not draws or len(draws) < 5:
+                draws = session.query(MegamillionsDraw).order_by(MegamillionsDraw.draw_date.desc()).limit(20).all()
+                draws = list(reversed(draws))
+            else:
+                draws = sorted(draws, key=lambda d: d.draw_date)
+            feats = feature_vector_megamillions(draws)
+            session.close()
+            if model_megamillions is None:
+                return "No Mega Millions model loaded."
+            with torch.no_grad():
+                x_t = torch.from_numpy(feats).unsqueeze(0)
+                logits = model_megamillions(x_t)
+                probs = torch.sigmoid(logits).numpy().flatten()
+            # For Mega Millions: first 70 for white, next 25 for red.
+            white_probs = probs[:70]
+            red_probs = probs[70:]
+        
+        # Use weighted random sampling to produce different sets.
+        def generate_ai_sets(white_probs, red_probs, num_sets):
+            white_probs = np.array(white_probs)
+            red_probs = np.array(red_probs)
+            # Normalize distributions
+            if white_probs.sum() == 0:
+                white_probs = np.ones_like(white_probs) / len(white_probs)
+            else:
+                white_probs = white_probs / white_probs.sum()
+            if red_probs.sum() == 0:
+                red_probs = np.ones_like(red_probs) / len(red_probs)
+            else:
+                red_probs = red_probs / red_probs.sum()
+            sets = []
+            for _ in range(num_sets):
+                # Randomly choose 5 white balls (without replacement)
+                white_set = np.random.choice(np.arange(1, len(white_probs)+1),
+                                             size=5, replace=False, p=white_probs)
+                white_set = sorted(white_set.tolist())
+                red_ball = int(np.random.choice(np.arange(1, len(red_probs)+1), p=red_probs))
+                sets.append({"whites": white_set, "red": red_ball})
+            return sets
+        
+        ai_sets = generate_ai_sets(white_probs, red_probs, num_sets)
+        reason = "The model generated these sets based on the weighted probability distribution computed from draws in your selected date range."
+        
         return render_template("predict.html",
                                game=game,
-                               white_balls=best_whites,
-                               red_ball=best_red)
+                               start_date=start_date_str,
+                               end_date=end_date_str,
+                               ai_sets=ai_sets,
+                               ai_reason=reason)
     else:
-        # Mega Millions
-        draws = (session.query(MegamillionsDraw)
-                 .order_by(MegamillionsDraw.draw_date.desc())
-                 .limit(20)
-                 .all())
-        draws = list(reversed(draws))
-        feats = feature_vector_megamillions(draws)
-        session.close()
-
-        if model_megamillions is None:
-            return "No Mega Millions model loaded."
-
-        with torch.no_grad():
-            x_t = torch.from_numpy(feats).unsqueeze(0)
-            logits = model_megamillions(x_t)
-            probs = torch.sigmoid(logits).numpy().flatten()
-
-        white_probs = probs[:70]
-        red_probs   = probs[70:]
-        top5 = np.argpartition(white_probs, -5)[-5:]
-        top5 = top5[np.argsort(white_probs[top5])[::-1]]
-        best_whites = list(top5+1)
-        best_red = int(np.argmax(red_probs)+1)
-
+        # GET: Show the input form for AI Prediction with no default prediction results.
         return render_template("predict.html",
-                               game=game,
-                               white_balls=best_whites,
-                               red_ball=best_red)
+                               game="",
+                               start_date="",
+                               end_date="",
+                               ai_sets=None,  # explicitly pass None so no results are shown
+                               ai_reason="")
 
-@app.route("/manual_combos", methods=["GET","POST"])
+
+
+@app.route("/manual_combos", methods=["POST", "GET"])
 def manual_combos():
-    if request.method=="GET":
-        return render_template("combos.html", combos=None)
-
-    game = request.form.get("game")
-    white_str = request.form.get("white_list","")
-    red_str   = request.form.get("red_list","")
-
-    try:
-        white_nums = sorted(set(int(x) for x in white_str.split(",") if x.strip()))
-        red_nums   = sorted(set(int(x) for x in red_str.split(",") if x.strip()))
-    except ValueError:
-        return "Invalid input, please use comma-separated integers."
-
-    if game=="Powerball":
-        # 1..69 for white, 1..26 for red
-        white_nums=[w for w in white_nums if 1<=w<=69]
-        red_nums=[r for r in red_nums if 1<=r<=26]
+    if request.method == "POST":
+        game = request.form.get("game")
+        start_str = request.form.get("start_date", "")
+        end_str = request.form.get("end_date", "")
+        try:
+            start_dt = datetime.strptime(start_str, "%Y-%m-%d").date()
+            end_dt = datetime.strptime(end_str, "%Y-%m-%d").date()
+        except:
+            return "Invalid date format. Please use YYYY-MM-DD."
+        
+        # For frequency graph on combos page, get draws and compute frequencies.
+        if game == "Powerball":
+            draws = fetch_powerball_draws(start_dt, end_dt)
+            wfreq, rfreq = frequency_powerball(draws)
+            xw, yw = make_xy(wfreq)
+            xr, yr = make_xy(rfreq)
+        else:
+            draws = fetch_megamillions_draws(start_dt, end_dt)
+            wfreq, rfreq = frequency_megamillions(draws)
+            xw, yw = make_xy(wfreq)
+            xr, yr = make_xy(rfreq)
+        
+        white_str = request.form.get("white_list", "")
+        red_str = request.form.get("red_list", "")
+        import itertools
+        combos = []
+        try:
+            w_nums = sorted(set(int(x) for x in white_str.split(",") if x.strip()))
+            r_nums = sorted(set(int(x) for x in red_str.split(",") if x.strip()))
+            for combo in itertools.combinations(w_nums, 5):
+                for r in r_nums:
+                    combos.append((combo, r))
+        except Exception as e:
+            return "Error parsing numbers: " + str(e)
+        
+        return render_template("combos.html",
+                               game=game,
+                               start_date=start_dt.strftime("%Y-%m-%d"),
+                               end_date=end_dt.strftime("%Y-%m-%d"),
+                               xw=xw, yw=yw,
+                               xr=xr, yr=yr,
+                               combos=combos)
     else:
-        white_nums=[w for w in white_nums if 1<=w<=70]
-        red_nums=[r for r in red_nums if 1<=r<=25]
+        # GET: supply default empty frequency data and fields.
+        return render_template("combos.html",
+                               game="",
+                               start_date="",
+                               end_date="",
+                               xw=[], yw=[], xr=[], yr=[],
+                               combos=None)
 
-    if len(white_nums)<5 or len(red_nums)<1:
-        return "Not enough candidate numbers."
-
-    import itertools
-    combos=[]
-    for combo in itertools.combinations(white_nums, 5):
-        combo_sorted=sorted(combo)
-        for r in red_nums:
-            combos.append((combo_sorted, r))
-
-    return render_template("combos.html",
-                           combos=combos,
-                           white_list=white_str,
-                           red_list=red_str,
-                           game=game)
-
-if __name__=="__main__":
+if __name__ == "__main__":
     init_db()
     app.run(debug=True)

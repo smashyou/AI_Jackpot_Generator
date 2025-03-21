@@ -8,36 +8,40 @@
     <div id="whiteChart"></div>
   </div>
   <div class="col-md-6">
-    <h4>Red Ball Frequency</h4>
+    <h4>
+      {% if game == "Powerball" %} Powerball Frequency {% else %} Mega Ball
+      Frequency {% endif %}
+    </h4>
     <div id="redChart"></div>
   </div>
 </div>
+
+<button
+  class="btn btn-secondary mt-3"
+  onclick="location.href='{{ url_for('index') }}'"
+>
+  Go Home
+</button>
 
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script>
   var xw = {{ xw|tojson|safe }};
   var yw = {{ yw|tojson|safe }};
-  var dataWhite = [
-    {
-      x: xw,
-      y: yw,
-      type: "bar",
-    },
-  ];
-  Plotly.newPlot("whiteChart", dataWhite, { title: "White Balls" });
+  var dataWhite = [{ x: xw, y: yw, type: 'bar' }];
+  var game = "{{ game }}"
+  if (game === "Powerball") {
+    Plotly.newPlot('whiteChart', dataWhite, { title: '1-69' });
+  } else {
+    Plotly.newPlot('whiteChart', dataWhite, { title: '1-70' });
+  }
 
   var xr = {{ xr|tojson|safe }};
   var yr = {{ yr|tojson|safe }};
-  var dataRed = [
-    {
-      x: xr,
-      y: yr,
-      type: "bar",
-      marker: { color: "red" },
-    },
-  ];
-  Plotly.newPlot("redChart", dataRed, { title: "Red Balls" });
+  var dataRed = [{ x: xr, y: yr, type: 'bar', marker: { color: 'red' } }];
+  if (game === "Powerball") {
+    Plotly.newPlot('redChart', dataRed, { title: '1-26' });
+  } else {
+    Plotly.newPlot('redChart', dataRed, { title: '1-25' });
+  }
 </script>
-
-<a href="{{ url_for('index') }}" class="btn btn-primary mt-3">Back to Home</a>
 {% endblock %}

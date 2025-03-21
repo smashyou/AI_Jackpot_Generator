@@ -1,11 +1,51 @@
 {% extends "layout.html" %} {% block content %}
 <h2>AI Prediction for {{ game }}</h2>
-{% if game == "Powerball" %}
-<p>White Balls: {{ white_balls }}</p>
-<p>Powerball: {{ red_ball }}</p>
-{% else %}
-<p>White Balls: {{ white_balls }}</p>
-<p>Mega Ball: {{ red_ball }}</p>
+<p>Date Range: {{ start_date }} to {{ end_date }}</p>
+
+<form method="POST" action="{{ url_for('ai_predict') }}" class="row g-3 mb-3">
+  <div class="col-md-6">
+    <label for="numSets" class="form-label"
+      >How many sets of winning numbers would you like? (Up to 10 sets!)</label
+    >
+    <input
+      type="number"
+      class="form-control"
+      id="numSets"
+      name="num_sets"
+      min="1"
+      max="10"
+      value="1"
+    />
+  </div>
+  <div class="col-md-12">
+    <button class="btn btn-success">Generate AI Sets</button>
+  </div>
+  <!-- We'll keep hidden fields for game, start_date, end_date if needed -->
+  <input type="hidden" name="game" value="{{ game }}" />
+  <input type="hidden" name="start_date" value="{{ start_date }}" />
+  <input type="hidden" name="end_date" value="{{ end_date }}" />
+</form>
+
+<!-- If we already have results to display -->
+{% if ai_sets %}
+<div class="card p-3">
+  <h5>AI Predicted Sets</h5>
+  <ul>
+    {% for set_data in ai_sets %}
+    <li>
+      White Balls: {{ set_data.whites }} | {% if game == "Powerball"
+      %}Powerball{% else %}Mega Ball{% endif %}: {{ set_data.red }}
+    </li>
+    {% endfor %}
+  </ul>
+  <p class="mt-2"><strong>Reasoning:</strong> {{ ai_reason }}</p>
+</div>
 {% endif %}
-<a href="{{ url_for('index') }}" class="btn btn-primary">Back to Home</a>
+
+<button
+  class="btn btn-secondary"
+  onclick="location.href='{{ url_for('index') }}'"
+>
+  Go Home
+</button>
 {% endblock %}
