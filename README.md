@@ -19,25 +19,53 @@ A Python/Flask web application for AI-based lottery analysis.
 
 ```
 python db/models.py
+
+or
+
+python3.11 db/models.py
 ```
 
 2. Import CSV:
 
 ```
 python scripts/import_csv.py
+
+or
+
+python3.11 -m scripts.import_csv
 ```
 
-3. Train:
+3a. Train: Downgrade numpy to 1.x if needed!
+
+```
+pip install --upgrade "numpy<2"
+
+or
+
+pip3.11 install --upgrade "numpy<2"
+```
+
+3b. Train: After successfully installing numpy... These commands will create ".pt" files in the root folder
 
 ```
 python training/train_powerball.py
 python training/train_megamillions.py
+
+or
+
+python3.11 -m training.train_powerball
+python3.11 -m training.train_megamillions
 ```
 
 4. Run App:
 
 ```
 cd app python app.py
+
+or 
+
+at the root level:
+python3.11 -m app.app
 
 Access at http://127.0.0.1:5000
 ```
@@ -46,6 +74,10 @@ Access at http://127.0.0.1:5000
 
 ```
 python scripts/update_draws.py
+
+or
+
+python3.11 -m scripts.update_draws
 ```
 
 Then optionally re-train models with new data.
