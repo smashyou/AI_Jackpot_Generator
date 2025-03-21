@@ -15,8 +15,8 @@
 
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script>
-  var xw = JSON.parse("{{ xw|tojson|escapejs }}");
-  var yw = JSON.parse("{{ yw|tojson|escapejs }}");
+  var xw = {{ xw|tojson|safe }};
+  var yw = {{ yw|tojson|safe }};
   var dataWhite = [
     {
       x: xw,
@@ -26,8 +26,8 @@
   ];
   Plotly.newPlot("whiteChart", dataWhite, { title: "White Balls" });
 
-  var xr = JSON.parse("{{ xr|tojson|escapejs }}");
-  var yr = JSON.parse("{{ yr|tojson|escapejs }}");
+  var xr = {{ xr|tojson|safe }};
+  var yr = {{ yr|tojson|safe }};
   var dataRed = [
     {
       x: xr,
