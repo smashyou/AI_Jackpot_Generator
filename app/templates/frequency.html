@@ -1,0 +1,43 @@
+{% extends "layout.html" %} {% block content %}
+<h2>Frequency for {{ game }}</h2>
+<p>Date Range: {{ start_date }} to {{ end_date }}</p>
+
+<div class="row">
+  <div class="col-md-6">
+    <h4>White Ball Frequency</h4>
+    <div id="whiteChart"></div>
+  </div>
+  <div class="col-md-6">
+    <h4>Red Ball Frequency</h4>
+    <div id="redChart"></div>
+  </div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+  var xw = JSON.parse("{{ xw|tojson|escapejs }}");
+  var yw = JSON.parse("{{ yw|tojson|escapejs }}");
+  var dataWhite = [
+    {
+      x: xw,
+      y: yw,
+      type: "bar",
+    },
+  ];
+  Plotly.newPlot("whiteChart", dataWhite, { title: "White Balls" });
+
+  var xr = JSON.parse("{{ xr|tojson|escapejs }}");
+  var yr = JSON.parse("{{ yr|tojson|escapejs }}");
+  var dataRed = [
+    {
+      x: xr,
+      y: yr,
+      type: "bar",
+      marker: { color: "red" },
+    },
+  ];
+  Plotly.newPlot("redChart", dataRed, { title: "Red Balls" });
+</script>
+
+<a href="{{ url_for('index') }}" class="btn btn-primary mt-3">Back to Home</a>
+{% endblock %}

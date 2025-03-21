@@ -1,0 +1,11 @@
+{% extends "layout.html" %} {% block content %}
+<h2>AI Prediction for {{ game }}</h2>
+{% if game == "Powerball" %}
+<p>White Balls: {{ white_balls }}</p>
+<p>Powerball: {{ red_ball }}</p>
+{% else %}
+<p>White Balls: {{ white_balls }}</p>
+<p>Mega Ball: {{ red_ball }}</p>
+{% endif %}
+<a href="{{ url_for('index') }}" class="btn btn-primary">Back to Home</a>
+{% endblock %}

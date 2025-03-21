@@ -1,0 +1,14 @@
+{% extends "layout.html" %} {% block content %}
+<h2>Manual Combos</h2>
+{% if combos %}
+<p>Total combos: {{ combos|length }}</p>
+<ol>
+  {% for c in combos %}
+  <li>White: {{ c[0] }} | Red: {{ c[1] }}</li>
+  {% endfor %}
+</ol>
+<a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Home</a>
+{% else %}
+<p>No combos to display yet. Use the form on the home page.</p>
+<a href="{{ url_for('index') }}" class="btn btn-primary">Back to Home</a>
+{% endif %} {% endblock %}

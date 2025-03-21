@@ -1,0 +1,66 @@
+{% extends "layout.html" %} {% block content %}
+<h1>Lottery AI App</h1>
+<p>
+  Select a game &amp; date range to see frequency stats, or do AI predictions,
+  or generate manual combos.
+</p>
+
+<form method="POST" action="{{ url_for('frequency') }}" class="mb-3">
+  <div class="mb-2">
+    <label>Game:</label>
+    <select name="game" class="form-select">
+      <option value="Powerball">Powerball</option>
+      <option value="Megamillions">Mega Millions</option>
+    </select>
+  </div>
+  <div class="mb-2">
+    <label>Start Date:</label>
+    <input type="date" name="start_date" class="form-control" required />
+  </div>
+  <div class="mb-2">
+    <label>End Date:</label>
+    <input type="date" name="end_date" class="form-control" required />
+  </div>
+  <button class="btn btn-primary">Show Frequency</button>
+</form>
+
+<form method="POST" action="{{ url_for('ai_predict') }}" class="mb-3">
+  <div class="mb-2">
+    <label>Game:</label>
+    <select name="game" class="form-select">
+      <option value="Powerball">Powerball</option>
+      <option value="Megamillions">Mega Millions</option>
+    </select>
+  </div>
+  <button class="btn btn-success">AI Prediction</button>
+</form>
+
+<form method="POST" action="{{ url_for('manual_combos') }}">
+  <div class="mb-2">
+    <label>Game:</label>
+    <select name="game" class="form-select">
+      <option value="Powerball">Powerball</option>
+      <option value="Megamillions">Mega Millions</option>
+    </select>
+  </div>
+  <div class="mb-2">
+    <label>White Ball Candidates (comma-separated):</label>
+    <input
+      type="text"
+      name="white_list"
+      class="form-control"
+      placeholder="1,2,3,4,5,6"
+    />
+  </div>
+  <div class="mb-2">
+    <label>Red Ball Candidates (comma-separated):</label>
+    <input
+      type="text"
+      name="red_list"
+      class="form-control"
+      placeholder="10,11"
+    />
+  </div>
+  <button class="btn btn-info">Generate Combos</button>
+</form>
+{% endblock %}
