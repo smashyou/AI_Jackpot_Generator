@@ -38,9 +38,9 @@ python training/train_megamillions.py
 
 ```
 cd app python app.py
-```
 
 Access at http://127.0.0.1:5000
+```
 
 5. Weekly, run:
 
