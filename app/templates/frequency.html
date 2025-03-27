@@ -31,10 +31,11 @@
   var xr = {{ xr|tojson|safe }};
   var yr = {{ yr|tojson|safe }};
   var dataRed = [{ x: xr, y: yr, type: 'bar', marker: { color: 'red' } }];
+  var dataOrange = [{ x: xr, y: yr, type: 'bar', marker: { color: 'orange' } }];
   if (game === "Powerball") {
     Plotly.newPlot('redChart', dataRed, { title: '1-26' });
   } else {
-    Plotly.newPlot('redChart', dataRed, { title: '1-25' });
+    Plotly.newPlot('redChart', dataOrange, { title: '1-25' });
   }
 </script>
 {% endblock %}
