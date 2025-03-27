@@ -14,28 +14,29 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # 2. Set up Python (optional if you want to run tests).
+      # 2. Set up Python (optional, if you need to run tests or scripts)
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
-      # 3. Install dependencies.
+      # 3. Install dependencies
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # 4. Build the Docker image.
+      # 4. Build the Docker image
       - name: Build Docker Image
-        run: |
-          docker build -t ai-jackpot-generator .
+        run: docker build -t ai-jackpot-generator .
 
-      # 5. Log in to Amazon ECR using the registries input.
-      - name: Log in to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v1
+      # 5. Log in to Amazon ECR using the v2 action.
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
         with:
-          registries: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+          registryIds: "${{ secrets.AWS_ACCOUNT_ID }}"
+          mask-password: 'false'
 
       # 6. Tag the Docker image with ECR repository URI.
       - name: Tag Docker Image
@@ -53,7 +54,7 @@ jobs:
         with:
           version: 'v1.25.0'
 
-      # 9. Configure AWS Credentials for kubectl commands.
+      # 9. Configure AWS Credentials for subsequent AWS CLI commands.
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
