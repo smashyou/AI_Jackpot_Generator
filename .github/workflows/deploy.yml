@@ -1,4 +1,4 @@
-name: Deploy to EKS
+name: Deploy to AWS
 
 on:
   push:
@@ -18,7 +18,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       # 3. Install dependencies.
       - name: Install Dependencies
@@ -44,7 +44,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
         with:
           registryIds: ${{ secrets.AWS_ACCOUNT_ID }}
-          mask-password: 'false'
+          mask-password: "false"
 
       # 7. Tag the Docker image using the registry output from the login step.
       - name: Tag Docker Image
@@ -60,7 +60,7 @@ jobs:
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
         with:
-          version: 'v1.25.0'
+          version: "v1.25.0"
 
       # 10. Update kubeconfig for EKS cluster.
       - name: Update kubeconfig for EKS
@@ -72,3 +72,4 @@ jobs:
         run: |
           kubectl apply -f k8s/deployment.yaml
           kubectl apply -f k8s/cronjob.yaml
+          kubectl apply -f k8s/ingress.yaml
