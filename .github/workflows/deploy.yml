@@ -8,42 +8,52 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
+      # 1. Checkout the repository code.
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      # 2. Set up Python (optional if you want to run tests).
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
+      # 3. Install dependencies.
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # 4. Build the Docker image.
       - name: Build Docker Image
         run: |
           docker build -t ai-jackpot-generator .
 
+      # 5. Log in to Amazon ECR using the registries input.
       - name: Log in to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v1
         with:
-          aws-region: ${{ secrets.AWS_REGION }}
+          registries: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
+      # 6. Tag the Docker image with ECR repository URI.
       - name: Tag Docker Image
         run: |
           docker tag ai-jackpot-generator:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/apps/jackpotteller:latest
 
+      # 7. Push the Docker image to ECR.
       - name: Push Docker Image to ECR
         run: |
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/apps/jackpotteller:latest
 
+      # 8. Set up kubectl.
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
         with:
           version: 'v1.25.0'
 
+      # 9. Configure AWS Credentials for kubectl commands.
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -51,10 +61,12 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # 10. Update kubeconfig for EKS cluster.
       - name: Update kubeconfig for EKS
         run: |
           aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ai-jackpot-cluster
 
+      # 11. Deploy Kubernetes manifests.
       - name: Deploy to EKS
         run: |
           kubectl apply -f k8s/deployment.yaml
