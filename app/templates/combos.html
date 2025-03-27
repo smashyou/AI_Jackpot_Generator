@@ -65,13 +65,6 @@
 </div>
 {% endif %}
 
-<button
-  class="btn btn-secondary mt-3"
-  onclick="location.href='{{ url_for('index') }}'"
->
-  Go Home
-</button>
-
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script>
   var xw = {{ xw|tojson|safe }};

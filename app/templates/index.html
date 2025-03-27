@@ -1,6 +1,18 @@
-{% extends "layout.html" %} {% block content %}
-<div class="mb-4">
-  <h2>AI-Powered Jackpot Number Prediction App</h2>
+{% extends "layout.html" %}
+{% block content %}
+<style>
+  /* Reduce extra vertical spacing on mobile for the main heading */
+  @media (max-width: 576px) {
+    h2 {
+      margin-top: 10px;
+    }
+  }
+  h2 {
+    margin-top: 20px;
+  }
+</style>
+
+<h2>AI-Powered Jackpot Number Prediction App</h2>
   <p>Select a game &amp; date range, then pick which action you want.</p>
 </div>
 
@@ -16,14 +28,14 @@
   </div>
   <div class="col-md-4">
     <label for="startDate" class="form-label">Start Date:</label>
-    <input type="date" class="form-control" id="startDate" name="start_date" />
+    <input type="date" class="form-control" id="startDate" name="start_date" required>
     <br class="text-muted">
       Powerball earliest: 2015-10-07 <br>Mega Millions earliest: 2017-10-31
     </small>
   </div>
   <div class="col-md-4">
     <label for="endDate" class="form-label">End Date:</label>
-    <input type="date" class="form-control" id="endDate" name="end_date" />
+    <input type="date" class="form-control" id="endDate" name="end_date" required>
   </div>
 </form>
 
@@ -34,7 +46,7 @@
   <h5>Choose an action:</h5>
   <div class="d-flex gap-3 flex-wrap">
     <!-- 1) Show Frequency -->
-    <form method="POST" action="{{ url_for('show_frequency') }}">
+    <form method="POST" action="{{ url_for('show_frequency') }}" onsubmit="return validateForm();">
       <input type="hidden" name="game" id="freqGame" />
       <input type="hidden" name="start_date" id="freqStart" />
       <input type="hidden" name="end_date" id="freqEnd" />
@@ -42,7 +54,7 @@
     </form>
 
     <!-- 2) AI Prediction -->
-    <form method="POST" action="{{ url_for('ai_predict') }}">
+    <form method="POST" action="{{ url_for('ai_predict') }}" onsubmit="return validateForm();">
       <input type="hidden" name="game" id="aiGame" />
       <input type="hidden" name="start_date" id="aiStart" />
       <input type="hidden" name="end_date" id="aiEnd" />
@@ -50,7 +62,7 @@
     </form>
 
     <!-- 3) Generate Combos -->
-    <form method="POST" action="{{ url_for('manual_combos') }}">
+    <form method="POST" action="{{ url_for('manual_combos') }}" onsubmit="return validateForm();">
       <input type="hidden" name="game" id="comboGame" />
       <input type="hidden" name="start_date" id="comboStart" />
       <input type="hidden" name="end_date" id="comboEnd" />
@@ -60,70 +72,75 @@
 </div>
 
 <script>
-  const gameSelect = document.getElementById("gameSelect");
-  const startDate = document.getElementById("startDate");
-  const endDate = document.getElementById("endDate");
-
-  // hidden form fields for each action
-  const freqGame = document.getElementById("freqGame");
-  const freqStart = document.getElementById("freqStart");
-  const freqEnd = document.getElementById("freqEnd");
-
-  const aiGame = document.getElementById("aiGame");
-  const aiStart = document.getElementById("aiStart");
-  const aiEnd = document.getElementById("aiEnd");
-
-  const comboGame = document.getElementById("comboGame");
-  const comboStart = document.getElementById("comboStart");
-  const comboEnd = document.getElementById("comboEnd");
-
+  // Function to set minimum start date based on selected game
   function setMinDate() {
-    // If user picks "Powerball", min date is 2015-10-07
-    // If "Megamillions", min date is 2017-10-31
-    if (gameSelect.value === "Powerball") {
-      startDate.min = "2015-10-07";
+    const game = document.getElementById('gameSelect').value;
+    const startDateInput = document.getElementById('startDate');
+    if (game === "Powerball") {
+      startDateInput.min = "2015-10-07";
+    } else if (game === "Megamillions") {
+      startDateInput.min = "2017-10-31";
     } else {
-      startDate.min = "2017-10-31";
+      startDateInput.min = "";
     }
-    // If user has set something earlier, we might reset it:
-    if (startDate.value) {
-      const chosen = new Date(startDate.value);
-      const minStr = startDate.min;
-      const minDate = new Date(minStr);
-      if (chosen < minDate) {
-        startDate.value = minStr;
-      }
+    // Optional: If the current start date is earlier than min, update it.
+    if (startDateInput.value && startDateInput.value < startDateInput.min) {
+      startDateInput.value = startDateInput.min;
     }
   }
 
+  // Function to validate form inputs before submission
+  function validateForm() {
+    const game = document.getElementById('gameSelect').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    if (!game || !startDate || !endDate) {
+      alert("Please fill out all dates before continuing.");
+      return false;
+    }
+    return true;
+  }
+
+  // Copy values from main form to hidden fields of each action form
   function syncInputs() {
-    freqGame.value = gameSelect.value;
-    freqStart.value = startDate.value;
-    freqEnd.value = endDate.value;
-
-    aiGame.value = gameSelect.value;
-    aiStart.value = startDate.value;
-    aiEnd.value = endDate.value;
-
-    comboGame.value = gameSelect.value;
-    comboStart.value = startDate.value;
-    comboEnd.value = endDate.value;
+    const game = document.getElementById('gameSelect').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    document.getElementById('freqGame').value = game;
+    document.getElementById('freqStart').value = startDate;
+    document.getElementById('freqEnd').value = endDate;
+    
+    document.getElementById('aiGame').value = game;
+    document.getElementById('aiStart').value = startDate;
+    document.getElementById('aiEnd').value = endDate;
+    
+    document.getElementById('comboGame').value = game;
+    document.getElementById('comboStart').value = startDate;
+    document.getElementById('comboEnd').value = endDate;
   }
 
-  // On page load, set the correct min date based on the default game
-  window.addEventListener("DOMContentLoaded", () => {
+  // Attach event listeners
+  document.getElementById('gameSelect').addEventListener('change', function() {
     setMinDate();
     syncInputs();
   });
+  document.getElementById('startDate').addEventListener('change', syncInputs);
+  document.getElementById('endDate').addEventListener('change', syncInputs);
 
-  // Whenever user changes the game, we set the min date
-  gameSelect.addEventListener("change", () => {
+  // Validate each action form on submission
+  document.querySelectorAll('.action-form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+      if (!validateForm()) {
+        e.preventDefault();
+      }
+    });
+  });
+
+  // On page load, synchronize the inputs (if any default values exist)
+  window.addEventListener('DOMContentLoaded', function() {
     setMinDate();
     syncInputs();
   });
-
-  // If user changes the dates, we also sync them to hidden fields
-  startDate.addEventListener("change", syncInputs);
-  endDate.addEventListener("change", syncInputs);
 </script>
 {% endblock %}
