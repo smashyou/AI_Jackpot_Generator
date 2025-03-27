@@ -1,0 +1,16 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ai-jackpot-scraper
+spec:
+  schedule: "0 10 * * 0" # Every Sunday at 10:00 AM EST
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: scraper
+              image: 479161062075.dkr.ecr.us-west-2.amazonaws.com/apps/jackpotteller:latest
+              # Ensure auto_update.py is in your image's root folder.
+              command: ["python3.11", "auto_update.py"]
+          restartPolicy: OnFailure
