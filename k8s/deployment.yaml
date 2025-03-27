@@ -15,6 +15,7 @@ spec:
       containers:
         - name: ai-jackpot-generator
           image: 479161062075.dkr.ecr.us-west-2.amazonaws.com/apps/jackpotteller:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
           env:
