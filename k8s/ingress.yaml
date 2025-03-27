@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ai-jackpot-ingress
+  annotations:
+    kubernetes.io/ingress.class: "alb" # Use the ALB ingress class.
+    alb.ingress.kubernetes.io/scheme: internet-facing # Internet-facing load balancer.
+    alb.ingress.kubernetes.io/target-type: ip # Use IP targets.
+    # Specify the ACM certificate ARN for HTTPS.
+    alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-west-2:479161062075:certificate/7b82e3ab-0b26-43f9-90c4-1b68de78d5ae"
+    # Configure the load balancer to listen on both HTTP and HTTPS.
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80,"HTTPS":443}]'
+    # Optional: force HTTP requests to redirect to HTTPS.
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+spec:
+  rules:
+    - host: "www.jackpotteller.com" # Replace with your custom domain.
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ai-jackpot-generator-service
+                port:
+                  number: 80
