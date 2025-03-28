@@ -84,8 +84,7 @@ Then optionally re-train models with new data.
 
 # Helpful commands
 
-````markdown
-# Deployment and Troubleshooting Guide for "Jackpot Teller AI" App on AWS EKS
+## Deployment and Troubleshooting Guide for "Jackpot Teller AI" App on AWS EKS
 
 This guide provides the necessary commands and steps to set up, verify, and troubleshoot the Jackpot Teller AI application running on AWS EKS, with a custom domain, HTTPS configuration, and automatic execution via a CronJob.
 
@@ -101,7 +100,6 @@ Make sure you have the AWS CLI installed and configured:
 aws --version
 aws configure  # (if not already configured, enter AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, region, and output format)
 ```
-````
 
 ### b. Update kubeconfig for Your EKS Cluster
 
