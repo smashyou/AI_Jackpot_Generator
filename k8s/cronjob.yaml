@@ -4,6 +4,7 @@ metadata:
   name: ai-jackpot-scraper
 spec:
   schedule: "0 10 * * 0" # Every Sunday at 10:00 AM EST
+  timeZone: "America/New_York" #Set Eastern Standard Time
   jobTemplate:
     spec:
       template:
